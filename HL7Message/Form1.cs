@@ -76,16 +76,61 @@ namespace HL7Message
         {
             PrDelSerieChartu(grafikVseho);
             InitChartu(grafikVseho);
-            List<Slovos> joudaList= new List<Slovos>();
+            DateTime minTime = new DateTime(9999, 1, 1, 0, 0, 0), maxTime = new DateTime(1, 1, 1, 0, 0, 0);
+            List<Slovos> joudaList = new List<Slovos>();
             foreach (var itemCLB in cLB.CheckedItems)
             {
                 string jouda = itemCLB.ToString();
-                joudaList.Add(dataSlovos.Find(kohoVeme => kohoVeme.key == jouda));
+                Slovos jedenPrvek = dataSlovos.Find(kohoVeme => kohoVeme.key == jouda);
+                joudaList.Add(jedenPrvek);
+                if (jedenPrvek.values.Min(hod => hod.Time) < minTime && jedenPrvek.values.Min(hod => hod.Time) != new DateTime(1, 1, 1, 0, 0, 0))
+                {
+                    minTime = jedenPrvek.values.Min(hod => hod.Time);
+                }
+                if (jedenPrvek.values.Max(hod => hod.Time) > maxTime)
+                {
+                    maxTime = jedenPrvek.values.Max(hod => hod.Time);
+                }
+
             }
-            int delkaPole = joudaList.Max(jl => jl.values.Count);
+            int delkaPole = (int)(maxTime - minTime).TotalMinutes + 1;
+            List<lineNameValues> keKresleni = new List<lineNameValues>();
+            foreach (var itemJL in joudaList)
+            {
+                lineNameValues lnv = new lineNameValues();
+                lnv.hodnotas = new double[delkaPole];
+                lnv.nameOfSeries = itemJL.key.Split('^')[1] + " [" + itemJL.values[0].Unit + "]";
+                DateTime casOdPocatku, hodnotyCas;
+                int iter = 0;
+                foreach (var hodnota in itemJL.values)
+                {
+                    casOdPocatku = new DateTime(minTime.Year, minTime.Month, minTime.Day, minTime.Hour, minTime.Minute, 0) + TimeSpan.FromMinutes(iter);
+                    hodnotyCas = new DateTime(hodnota.Time.Year, hodnota.Time.Month, hodnota.Time.Day, hodnota.Time.Hour, hodnota.Time.Minute, 0);
+                    if (hodnotyCas == casOdPocatku)
+                    {
+                        lnv.hodnotas[iter] = hodnota.ObjectuvValue;
+                    }
+                    else
+                    {
+                        int backUpIter = iter;
+                        do
+                        {
+                            iter++;
+                            casOdPocatku = new DateTime(minTime.Year, minTime.Month, minTime.Day, minTime.Hour, minTime.Minute, 0) + TimeSpan.FromMinutes(iter);
+                            if (iter > delkaPole) { iter = backUpIter; break; }
+
+                        } while (hodnotyCas != casOdPocatku);
+                        lnv.hodnotas[iter] = hodnota.ObjectuvValue;
+                        iter++;
+                        continue;
+                    }
+                    iter++;
+                }
+            }
+
         }
 
-        
+
 
         #endregion
 
@@ -127,7 +172,7 @@ namespace HL7Message
                     Slovos slovoItemom = new Slovos();
                     slovoItemom.key = obxItem.Observation_Identifier;
                     Hodnota hodnotoso = new Hodnota();
-                    hodnotoso.ObjectValue = obxItem.Observation_Value;
+                    hodnotoso.ObjectuvValue = obxItem.Observation_Value;
                     hodnotoso.Unit = obxItem.Units;
                     hodnotoso.Time = obxItem.DateTime_of_the_Observation;
 
@@ -139,7 +184,7 @@ namespace HL7Message
                 else
                 {
                     Hodnota hodnotoso = new Hodnota();
-                    hodnotoso.ObjectValue = obxItem.Observation_Value;
+                    hodnotoso.ObjectuvValue = obxItem.Observation_Value;
                     hodnotoso.Time = obxItem.DateTime_of_the_Observation;
                     hodnotoso.Unit = obxItem.Units;
                     existItema.values.Add(hodnotoso);
@@ -385,7 +430,7 @@ namespace HL7Message
         }
 
         #endregion
-             
+
         #endregion
     }
 }

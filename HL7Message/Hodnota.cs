@@ -7,7 +7,7 @@ namespace HL7Message
 {
     class Hodnota
     {
-        public double ObjectValue;
+        public double ObjectuvValue;
         public string Unit;
         public DateTime Time;
 
