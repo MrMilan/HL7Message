@@ -24,6 +24,7 @@ namespace HL7Message
         public Form1()
         {
             InitializeComponent();
+            InitChartu(grafikVseho);
         }
 
         #region Eventsna kliknuti
@@ -70,10 +71,21 @@ namespace HL7Message
             min = dataOBR.FindAll(ob => ob.Observation_DateTime > new DateTime(1, 1, 1, 0, 0, 0)).Min(obr => obr.Observation_DateTime);
         }
 
-        private void cLB_ItemCheck(object sender, ItemCheckEventArgs e)
-        {
 
+        private void cLB_MouseUp(object sender, MouseEventArgs e)
+        {
+            PrDelSerieChartu(grafikVseho);
+            InitChartu(grafikVseho);
+            List<Slovos> joudaList= new List<Slovos>();
+            foreach (var itemCLB in cLB.CheckedItems)
+            {
+                string jouda = itemCLB.ToString();
+                joudaList.Add(dataSlovos.Find(kohoVeme => kohoVeme.key == jouda));
+            }
+            int delkaPole = joudaList.Max(jl => jl.values.Count);
         }
+
+        
 
         #endregion
 
