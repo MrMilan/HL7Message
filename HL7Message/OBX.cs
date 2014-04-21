@@ -30,7 +30,7 @@ namespace HL7Message
         public string Value_Type;
         public string Observation_Identifier;
         public string Observation_SubId;
-        public string Observation_Value;
+        public double Observation_Value;
         public string Units;
         public string Reference_Range;
         public string Abnormal_Flags;
@@ -39,11 +39,53 @@ namespace HL7Message
         public string Observ_Result_Status;
         public string Data_Last_Obs_Normal_Values;
         public string User_Defined_Access_Checks;
-        public string DateTime_of_the_Observation;
+        public DateTime DateTime_of_the_Observation;
         public string Producers_Id;
         public string Responsible_Observer;
         public string Observation_Method;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="datetimeOriginal"></param>
+        /// <returns>Datetime</returns>
+        public DateTime GetTimeFromString(string datetimeOriginal)
+        {
+            if (String.IsNullOrWhiteSpace(datetimeOriginal))
+            {
+                return new DateTime(1, 1, 1, 0, 0, 0);
+            }
+            else
+            {
+                return new DateTime(Convert.ToInt32(datetimeOriginal.Substring(0, 4)),
+                             Convert.ToInt32(datetimeOriginal.Substring(4, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(6, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(8, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(10, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(12, 2)));
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Int</returns>
+        public double GetIntValueFromString(string valueOriginal)
+        {
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToInt32(valueOriginal);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Double</returns>
+        public double GetDoubleValueFromString(string valueOriginal)
+        {
+            valueOriginal = valueOriginal.Replace(".", ",");
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToDouble(valueOriginal);
+        }
 
     }
 }

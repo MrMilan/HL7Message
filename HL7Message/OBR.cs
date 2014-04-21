@@ -53,48 +53,91 @@ namespace HL7Message
         //43	200 	CE	O	    Y   	Planned Patient Transport Comment
 
         public string Set_ID_OBR;
-public string Placer_Order_Number;
-public string Filler_Order_Number;
-public string Universal_Service_ID;
-public string Priority;
-public string Requested_Datetime;
-public string Observation_DateTime;
-public string Observation_End_DateTime;
-public string Collection_Volume;
-public string Collector_Identifier;
-public string Specimen_Action_Code;
-public string Danger_Code;
-public string Relevant_Clinical_Info;
-public string Specimen_Received_DateTime;
-public string Specimen_Source;
-public string Ordering_Provider;
-public string Order_Callback_Phone_Number;
-public string Placer_field_1;
-public string Placer_field_2;
-public string Filler_Field_1;
-public string Filler_Field_2;
-public string Results_RptStatus_Chng_DateTime;
-public string Charge_to_Practice;
-public string Diagnostic_Serv_Sect_ID;
-public string Result_Status;
-public string Parent_Result;
-public string QuantityTiming;
-public string Result_Copies_To;
-public string Parent;
-public string Transportation_Mode;
-public string Reason_for_Study;
-public string Principal_Result_Interpreter;
-public string Assistant_Result_Interpreter;
-public string Technician;
-public string Transcriptionist;
-public string Scheduled_DateTime;
-public string Number_of_Sample_Containers;
-public string Transport_Logistics_of_Collected_Sample;
-public string Collectors_Comment;
-public string Transport_Arrangement_Responsibility;
-public string Transport_Arranged;
-public string Escort_Required;
-public string Planned_Patient_Transport_Comment;
+        public string Placer_Order_Number;
+        public string Filler_Order_Number;
+        public string Universal_Service_ID;
+        public string Priority;
+        public DateTime Requested_Datetime;
+        public DateTime Observation_DateTime;
+        public DateTime Observation_End_DateTime;
+        public string Collection_Volume;
+        public string Collector_Identifier;
+        public string Specimen_Action_Code;
+        public string Danger_Code;
+        public string Relevant_Clinical_Info;
+        public DateTime Specimen_Received_DateTime;
+        public string Specimen_Source;
+        public string Ordering_Provider;
+        public string Order_Callback_Phone_Number;
+        public string Placer_field_1;
+        public string Placer_field_2;
+        public string Filler_Field_1;
+        public string Filler_Field_2;
+        public DateTime Results_RptStatus_Chng_DateTime;
+        public string Charge_to_Practice;
+        public string Diagnostic_Serv_Sect_ID;
+        public string Result_Status;
+        public string Parent_Result;
+        public string QuantityTiming;
+        public string Result_Copies_To;
+        public string Parent;
+        public string Transportation_Mode;
+        public string Reason_for_Study;
+        public string Principal_Result_Interpreter;
+        public string Assistant_Result_Interpreter;
+        public string Technician;
+        public string Transcriptionist;
+        public DateTime Scheduled_DateTime;
+        public string Number_of_Sample_Containers;
+        public string Transport_Logistics_of_Collected_Sample;
+        public string Collectors_Comment;
+        public string Transport_Arrangement_Responsibility;
+        public string Transport_Arranged;
+        public string Escort_Required;
+        public string Planned_Patient_Transport_Comment;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="datetimeOriginal"></param>
+        /// <returns>Datetime</returns>
+        public DateTime GetTimeFromString(string datetimeOriginal)
+        {
+            if (String.IsNullOrWhiteSpace(datetimeOriginal))
+            {
+                return new DateTime(1, 1, 1, 0, 0, 0);
+            }
+            else
+            {
+                return new DateTime(Convert.ToInt32(datetimeOriginal.Substring(0, 4)),
+                             Convert.ToInt32(datetimeOriginal.Substring(4, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(6, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(8, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(10, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(12, 2)));
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Int</returns>
+        public double GetIntValueFromString(string valueOriginal)
+        {
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToInt32(valueOriginal);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Double</returns>
+        public double GetDoubleValueFromString(string valueOriginal)
+        {
+            valueOriginal = valueOriginal.Replace(".", ",");
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToDouble(valueOriginal);
+        }
 
 
     }

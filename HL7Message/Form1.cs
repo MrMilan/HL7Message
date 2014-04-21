@@ -15,7 +15,7 @@ namespace HL7Message
     {
 
         #region GlobalVariables
-
+        public const int eM = 8;
         private List<MSH> dataMSH = new List<MSH>();
         private List<OBR> dataOBR = new List<OBR>();
         private List<OBX> dataOBX = new List<OBX>();
@@ -32,6 +32,7 @@ namespace HL7Message
             string seznamCtenychSouboru = ListFileTerminals();
 
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
+            cLB.Enabled = false;
 
             openFileDialog1.Filter = seznamCtenychSouboru;
             openFileDialog1.RestoreDirectory = true;
@@ -41,14 +42,36 @@ namespace HL7Message
                 try
                 {
                     DivideDataByType(ReadDataFromFile(openFileDialog1.FileName));
-                    MakeDictonary();
+
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("Error: Pojebalo se to nekde pri nacitani Puvodni error: " + ex.Message);
                 }
             }
+            try
+            {
+                MakeDictonary();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: Pojebalo se to nekde pri delani slovniku Puvodni error: " + ex.Message);
+            }
+            List<string> seznamMerVel = dataSlovos.Select(slov => slov.key).ToList();
+            FillCheckBoxList(cLB, seznamMerVel);
+            if (seznamMerVel.Count() > 0)
+            {
+                cLB.Enabled = true;
+                cLB.Width = (seznamMerVel.Max(vec => vec.ToString().Length)) * eM;
+            }
 
+            DateTime min = dataOBX.FindAll(ob => ob.DateTime_of_the_Observation > new DateTime(1, 1, 1, 0, 0, 0)).Min(ob => ob.DateTime_of_the_Observation);
+            var litsek = dataMSH.FindAll(msh => msh.DateTime_of_Message > new DateTime(1, 1, 1, 0, 0, 0)).Min(msh => msh.DateTime_of_Message);
+            min = dataOBR.FindAll(ob => ob.Observation_DateTime > new DateTime(1, 1, 1, 0, 0, 0)).Min(obr => obr.Observation_DateTime);
+        }
+
+        private void cLB_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
 
         }
 
@@ -86,11 +109,7 @@ namespace HL7Message
 
             foreach (var obxItem in dataOBX)
             {
-                Slovos existItema = dataSlovos.Find(delegate(Slovos sl)
-             {
-                 return sl.key == obxItem.Observation_Identifier;
-             }
-             );
+                Slovos existItema = dataSlovos.Find(sl => sl.key == obxItem.Observation_Identifier);
                 if (existItema == null)
                 {
                     Slovos slovoItemom = new Slovos();
@@ -98,6 +117,8 @@ namespace HL7Message
                     Hodnota hodnotoso = new Hodnota();
                     hodnotoso.ObjectValue = obxItem.Observation_Value;
                     hodnotoso.Unit = obxItem.Units;
+                    hodnotoso.Time = obxItem.DateTime_of_the_Observation;
+
                     slovoItemom.values = new List<Hodnota>();
                     slovoItemom.values.Add(hodnotoso);
                     dataSlovos.Add(slovoItemom);
@@ -105,21 +126,13 @@ namespace HL7Message
                 }
                 else
                 {
-                    foreach (var itemSlovos in dataSlovos)
-                    {
-                        if (itemSlovos.key == obxItem.Observation_Identifier)
-                        {
-                            Hodnota hodnotoso = new Hodnota();
-                            hodnotoso.ObjectValue = obxItem.Observation_Value;
-                            hodnotoso.Unit = obxItem.Units;
-                            itemSlovos.values.Add(hodnotoso);
-                            break;
-                        }
-
-                    }
+                    Hodnota hodnotoso = new Hodnota();
+                    hodnotoso.ObjectValue = obxItem.Observation_Value;
+                    hodnotoso.Time = obxItem.DateTime_of_the_Observation;
+                    hodnotoso.Unit = obxItem.Units;
+                    existItema.values.Add(hodnotoso);
                 }
             }
-
 
         }
         #endregion
@@ -135,15 +148,15 @@ namespace HL7Message
             rData.Filler_Order_Number = inputData[2 + 1];
             rData.Universal_Service_ID = inputData[3 + 1];
             rData.Priority = inputData[4 + 1];
-            rData.Requested_Datetime = inputData[5 + 1];
-            rData.Observation_DateTime = inputData[6 + 1];
-            rData.Observation_End_DateTime = inputData[7 + 1];
+            rData.Requested_Datetime = rData.GetTimeFromString(inputData[5 + 1]);
+            rData.Observation_DateTime = rData.GetTimeFromString(inputData[6 + 1]);
+            rData.Observation_End_DateTime = rData.GetTimeFromString(inputData[7 + 1]);
             rData.Collection_Volume = inputData[8 + 1];
             rData.Collector_Identifier = inputData[9 + 1];
             rData.Specimen_Action_Code = inputData[10 + 1];
             rData.Danger_Code = inputData[11 + 1];
             rData.Relevant_Clinical_Info = inputData[13 + 1];
-            rData.Specimen_Received_DateTime = inputData[14 + 1];
+            rData.Specimen_Received_DateTime = rData.GetTimeFromString(inputData[14 + 1]);
             rData.Specimen_Source = inputData[15 + 1];
             rData.Ordering_Provider = inputData[16 + 1];
             rData.Order_Callback_Phone_Number = inputData[17 + 1];
@@ -151,7 +164,7 @@ namespace HL7Message
             rData.Placer_field_2 = inputData[19 + 1];
             rData.Filler_Field_1 = inputData[20 + 1];
             rData.Filler_Field_2 = inputData[21 + 1];
-            rData.Results_RptStatus_Chng_DateTime = inputData[23 + 1];
+            rData.Results_RptStatus_Chng_DateTime = rData.GetTimeFromString(inputData[23 + 1]);
             rData.Charge_to_Practice = inputData[24 + 1];
             //rData.Diagnostic_Serv_Sect_ID = inputData[25+1];
             //rData.Result_Status = inputData[26+1];
@@ -184,7 +197,7 @@ namespace HL7Message
             rData.Value_Type = inputData[1 + 1];
             rData.Observation_Identifier = inputData[2 + 1];
             rData.Observation_SubId = inputData[3 + 1];
-            rData.Observation_Value = inputData[4 + 1];
+            rData.Observation_Value = rData.GetDoubleValueFromString(inputData[4 + 1]);
             rData.Units = inputData[5 + 1];
             rData.Reference_Range = inputData[6 + 1];
             rData.Abnormal_Flags = inputData[7 + 1];
@@ -193,7 +206,7 @@ namespace HL7Message
             rData.Observ_Result_Status = inputData[10 + 1];
             rData.Data_Last_Obs_Normal_Values = inputData[11 + 1];
             rData.User_Defined_Access_Checks = inputData[12 + 1];
-            rData.DateTime_of_the_Observation = inputData[13 + 1];
+            rData.DateTime_of_the_Observation = rData.GetTimeFromString(inputData[13 + 1]);
             rData.Producers_Id = inputData[14 + 1];
             rData.Responsible_Observer = inputData[15 + 1];
             rData.Observation_Method = inputData[16 + 1];
@@ -204,29 +217,30 @@ namespace HL7Message
         {
             MSH rData = new MSH();
             inputData = ReplaceSeparator(inputData, ",", ".");
-            rData.Field_Separator = inputData[0 + 1];
-            rData.Encoding_Characters = inputData[1 + 1];
-            rData.Sending_Application = inputData[2 + 1];
-            rData.Sending_Facility = inputData[3 + 1];
-            rData.Receiving_Application = inputData[4 + 1];
-            rData.Receiving_Facility = inputData[5 + 1];
-            rData.DateTime_of_Message = inputData[6 + 1];
-            rData.Security = inputData[7 + 1];
-            rData.Message_Type = inputData[8 + 1];
-            rData.Message_Control_Id = inputData[9 + 1];
-            rData.Processing_Id = inputData[10 + 1];
-            rData.Version_Id = inputData[11 + 1];
-            rData.Sequence_Number = inputData[12 + 1];
-            rData.Continuation_Pointer = inputData[13 + 1];
-            rData.Accept_Acknowledgement_Type = inputData[14 + 1];
-            rData.Application_Acknowledgement_Type = inputData[15 + 1];
-            rData.Country_Code = inputData[16 + 1];
-            rData.Character_Set = inputData[17 + 1];
-            rData.Principal_Language_of_Message = inputData[18 + 1];
+            rData.Field_Separator = inputData[1].Substring(0, 1);
+            rData.Encoding_Characters = null;
+            rData.Sending_Application = null;
+            rData.Sending_Facility = inputData[3];
+            rData.Receiving_Application = inputData[4];
+            rData.Receiving_Facility = inputData[5];
+            rData.DateTime_of_Message = rData.GetTimeFromString(inputData[6]);
+            rData.Security = inputData[7];
+            rData.Message_Type = inputData[8];
+            rData.Message_Control_Id = inputData[9];
+            rData.Processing_Id = inputData[10];
+            rData.Version_Id = inputData[11];
+            rData.Sequence_Number = inputData[12];
+            rData.Continuation_Pointer = inputData[13];
+            rData.Accept_Acknowledgement_Type = inputData[14];
+            rData.Application_Acknowledgement_Type = inputData[15];
+            rData.Country_Code = inputData[16];
+            rData.Character_Set = inputData[17];
+            rData.Principal_Language_of_Message = inputData[18];
             return rData;
         }
 
         #endregion
+
         #region Bezne rutiny
 
         /// <summary>
@@ -259,78 +273,12 @@ namespace HL7Message
 
         }
 
-        private double[] Histogram(double[] data, int range)
+        private void FillCheckBoxList(CheckedListBox nameCLB, List<string> listItems)
         {
-            Array.Sort(data);
-            double diference = data.Max() - data.Min();
-            int group = (int)(diference / range);
-            double[] his = new double[group];
-
-
-            for (int j = 0; j < data.Length; j++)
+            foreach (var item in listItems)
             {
-                for (int i = 0; i < group; i++)
-                {
-                    if (data[j] > (data.Min() + (range * i)) && data[j] <= (data.Min() + (range * (i + 1))))
-                    {
-                        his[i]++;
-                        break;
-                    }
-                    if (data[j] == data.Min())
-                    {
-                        his[i]++;
-                        break;
-                    }
-                }
+                nameCLB.Items.Add(item);
             }
-            return his;
-        }
-
-        private static string GetChecksum(string sentence)
-        {
-            //Start with first Item
-            int checksum = Convert.ToByte(sentence[sentence.IndexOf('$') + 1]);
-            // Loop through all chars to get a checksum
-            for (int i = sentence.IndexOf('$') + 2; i < sentence.IndexOf('*'); i++)
-            {
-                // No. XOR the checksum with this character's value
-                checksum ^= Convert.ToByte(sentence[i]);
-            }
-            // Return the checksum formatted as a two-character hexadecimal
-            return checksum.ToString("X2");
-        }
-
-        private double ConvetToDegLong(string nonDegValue, string logn)
-        {
-            if (logn == "E" || logn == "e")
-            {
-                return Convert.ToDouble(nonDegValue.Substring(0, 3)) + (Convert.ToDouble(nonDegValue.Substring(3, 5)) / (60));
-            }
-            if (logn == "W" || logn == "w")
-            {
-                return -(Convert.ToDouble(nonDegValue.Substring(0, 3)) + (Convert.ToDouble(nonDegValue.Substring(3, 5)) / (60)));
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private double ConvetToDEgLat(string nonDegValue, string lat)
-        {
-            if (lat == "N" || lat == "n")
-            {
-                return Convert.ToDouble(nonDegValue.Substring(0, 2)) + (Convert.ToDouble(nonDegValue.Substring(2, 6)) / (60));
-            }
-            if (lat == "S" || lat == "s")
-            {
-                return -(Convert.ToDouble(nonDegValue.Substring(0, 2)) + (Convert.ToDouble(nonDegValue.Substring(2, 6)) / (60)));
-            }
-            else
-            {
-                return 0;
-            }
-
         }
 
         #region rReplace metody
@@ -424,27 +372,8 @@ namespace HL7Message
 
         }
 
-        private void RdawHistogram(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType, int range)
-        {
-            if (range == null)
-            {
-                range = 100;
-            }
-
-            PrepareSerie(nameChartek, nameLine, seriesChartType);
-
-            // double[] pokus = { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 1,6,6, 2, 3, 4, 5, 6 };range = 2; // Rozložení histogramu {6,4,8}
-
-            double[] inputDataHis = Histogram(inputArray, range);
-
-            for (int i = 0; i < inputDataHis.Length; i++)
-            {
-                nameChartek.Series[nameLine].Points.AddXY(inputDataHis.Min() + (i * range), inputDataHis[i]);
-            }
-        }
-
         #endregion
-
+             
         #endregion
     }
 }

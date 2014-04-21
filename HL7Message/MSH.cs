@@ -41,7 +41,7 @@ namespace HL7Message
         public string Sending_Facility;
         public string Receiving_Application;
         public string Receiving_Facility;
-        public string DateTime_of_Message;
+        public DateTime DateTime_of_Message;
         public string Security;
         public string Message_Type;
         public string Message_Control_Id;
@@ -54,6 +54,49 @@ namespace HL7Message
         public string Country_Code;
         public string Character_Set;
         public string Principal_Language_of_Message;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="datetimeOriginal"></param>
+        /// <returns>Datetime</returns>
+        public DateTime GetTimeFromString(string datetimeOriginal)
+        {
+            if (String.IsNullOrWhiteSpace(datetimeOriginal))
+            {
+                return new DateTime(1, 1, 1, 0, 0, 0);
+            }
+            else
+            {
+                return new DateTime(Convert.ToInt32(datetimeOriginal.Substring(0, 4)),
+                             Convert.ToInt32(datetimeOriginal.Substring(4, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(6, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(8, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(10, 2)),
+                             Convert.ToInt32(datetimeOriginal.Substring(12, 2)));
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Int</returns>
+        public double GetIntValueFromString(string valueOriginal)
+        {
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToInt32(valueOriginal);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="valueOriginal"></param>
+        /// <returns>Double</returns>
+        public double GetDoubleValueFromString(string valueOriginal)
+        {
+            valueOriginal = valueOriginal.Replace(".", ",");
+            return String.IsNullOrWhiteSpace(valueOriginal) ? 0 : Convert.ToDouble(valueOriginal);
+        }
 
     }
 }
