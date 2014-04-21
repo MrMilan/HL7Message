@@ -77,7 +77,11 @@ namespace HL7Message
             PrDelSerieChartu(grafikVseho);
             InitChartu(grafikVseho);
             DateTime minTime = new DateTime(9999, 1, 1, 0, 0, 0), maxTime = new DateTime(1, 1, 1, 0, 0, 0);
+            int delkaPole;
             List<Slovos> joudaList = new List<Slovos>();
+            List<lineNameValues> keKresleni = new List<lineNameValues>();
+
+            #region Nastaveni minima, maxima a vyber dat do grafu
             foreach (var itemCLB in cLB.CheckedItems)
             {
                 string jouda = itemCLB.ToString();
@@ -93,15 +97,18 @@ namespace HL7Message
                 }
 
             }
-            int delkaPole = (int)(maxTime - minTime).TotalMinutes + 1;
-            List<lineNameValues> keKresleni = new List<lineNameValues>();
+            delkaPole = (int)(maxTime - minTime).TotalMinutes + 1;
+            #endregion
+            #region priprava dat ke kresleni grafu
             foreach (var itemJL in joudaList)
             {
+                #region init prochazeni
                 lineNameValues lnv = new lineNameValues();
                 lnv.hodnotas = new double[delkaPole];
-                lnv.nameOfSeries = itemJL.key.Split('^')[1] + " [" + itemJL.values[0].Unit + "]";
                 DateTime casOdPocatku, hodnotyCas;
                 int iter = 0;
+                lnv.nameOfSeries = itemJL.key/*.Split('^')[1]*/ + " - [" + itemJL.values[0].Unit + "]";
+                #endregion
                 foreach (var hodnota in itemJL.values)
                 {
                     casOdPocatku = new DateTime(minTime.Year, minTime.Month, minTime.Day, minTime.Hour, minTime.Minute, 0) + TimeSpan.FromMinutes(iter);
@@ -126,8 +133,15 @@ namespace HL7Message
                     }
                     iter++;
                 }
+                keKresleni.Add(lnv);
             }
-
+            #endregion
+            #region Kresleni do grafu
+            foreach (var rada in keKresleni)
+            {
+                RdawToGraphos(grafikVseho, rada.hodnotas, rada.nameOfSeries, SeriesChartType.FastLine);
+            }
+            #endregion
         }
 
 
@@ -387,9 +401,9 @@ namespace HL7Message
 
         private void PrDelSerieChartu(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek)
         {
-            for (int i = 0; i < nameChartek.Series.Count; i++)
-            {
-                nameChartek.Series.RemoveAt(i);
+            while (nameChartek.Series.Count > 0)
+            { 
+                nameChartek.Series.RemoveAt(0);
             }
         }
 
