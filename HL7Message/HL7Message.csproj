@@ -54,6 +54,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Hodnota.cs" />
+    <Compile Include="lineNameSegmentIndex.cs" />
     <Compile Include="lineNameValues.cs" />
     <Compile Include="MSH.cs" />
     <Compile Include="OBR.cs" />

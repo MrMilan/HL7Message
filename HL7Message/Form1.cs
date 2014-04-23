@@ -65,10 +65,8 @@ namespace HL7Message
                 cLB.Enabled = true;
                 cLB.Width = (seznamMerVel.Max(vec => vec.ToString().Length)) * eM;
             }
+            FindTiming();
 
-            DateTime min = dataOBX.FindAll(ob => ob.DateTime_of_the_Observation > new DateTime(1, 1, 1, 0, 0, 0)).Min(ob => ob.DateTime_of_the_Observation);
-            var litsek = dataMSH.FindAll(msh => msh.DateTime_of_Message > new DateTime(1, 1, 1, 0, 0, 0)).Min(msh => msh.DateTime_of_Message);
-            min = dataOBR.FindAll(ob => ob.Observation_DateTime > new DateTime(1, 1, 1, 0, 0, 0)).Min(obr => obr.Observation_DateTime);
         }
 
 
@@ -80,6 +78,7 @@ namespace HL7Message
             int delkaPole;
             List<Slovos> joudaList = new List<Slovos>();
             List<lineNameValues> keKresleni = new List<lineNameValues>();
+            List<lineNameSegmentIndex> segmenty = new List<lineNameSegmentIndex>();
 
             #region Nastaveni minima, maxima a vyber dat do grafu
             foreach (var itemCLB in cLB.CheckedItems)
@@ -134,12 +133,15 @@ namespace HL7Message
                     iter++;
                 }
                 keKresleni.Add(lnv);
+                segmenty.Add(IndexSegments(lnv));
             }
             #endregion
             #region Kresleni do grafu
             foreach (var rada in keKresleni)
             {
                 RdawToGraphos(grafikVseho, rada.hodnotas, rada.nameOfSeries, SeriesChartType.FastLine);
+                var sega = segmenty.Find(sego => sego.nameOfSeries.Substring(13) == rada.nameOfSeries);
+                RdawToGraphos(grafikVseho, sega.indexSegmentPos, rada.hodnotas, sega.nameOfSeries, SeriesChartType.Point);
             }
             #endregion
         }
@@ -148,7 +150,7 @@ namespace HL7Message
 
         #endregion
 
-        #region Splitovani a parsovani dat
+        #region Splitovani a parsovani (obecne priprava dat) dat
 
         private void DivideDataByType(string[] inputDataFromFile)
         {
@@ -206,6 +208,111 @@ namespace HL7Message
             }
 
         }
+
+        private lineNameSegmentIndex IndexSegments(lineNameValues lnv)
+        {
+            int delka = lnv.hodnotas.Length - 1;
+            lineNameSegmentIndex lnsi = new lineNameSegmentIndex();
+            lnsi.indexSegmentPos = new List<int>();
+            lnsi.nameOfSeries = "Segmentation " + lnv.nameOfSeries;
+            for (int k = 1; k < delka; k++)
+            {
+                if ((lnv.hodnotas[k - 1] == lnv.hodnotas[k] && lnv.hodnotas[k] < lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+                if ((lnv.hodnotas[k - 1] == lnv.hodnotas[k] && lnv.hodnotas[k] > lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+                if ((lnv.hodnotas[k - 1] < lnv.hodnotas[k] && lnv.hodnotas[k] == lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+                if ((lnv.hodnotas[k - 1] > lnv.hodnotas[k] && lnv.hodnotas[k] == lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+                if ((lnv.hodnotas[k - 1] < lnv.hodnotas[k] && lnv.hodnotas[k] > lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+                if ((lnv.hodnotas[k - 1] > lnv.hodnotas[k] && lnv.hodnotas[k] < lnv.hodnotas[k + 1]))
+                {
+                    lnsi.indexSegmentPos.Add(k);
+                }
+
+            }
+
+            return lnsi;
+
+        }
+
+        private void FindTiming()
+        {
+            List<string> vypisDat = new List<string>();
+            #region Vypocet celkove delky mereni
+            List<DateTime> minimaCasu = new List<DateTime>();
+            List<DateTime> maximaCasu = new List<DateTime>();
+            minimaCasu.Add(dataOBX.FindAll(ob => ob.DateTime_of_the_Observation > new DateTime(1, 1, 1, 0, 0, 0)).Min(ob => ob.DateTime_of_the_Observation));
+            minimaCasu.Add(dataMSH.FindAll(msh => msh.DateTime_of_Message > new DateTime(1, 1, 1, 0, 0, 0)).Min(msh => msh.DateTime_of_Message));
+            minimaCasu.Add(dataOBR.FindAll(ob => ob.Observation_DateTime > new DateTime(1, 1, 1, 0, 0, 0)).Min(obr => obr.Observation_DateTime));
+            maximaCasu.Add(dataOBX.Max(ob => ob.DateTime_of_the_Observation));
+            maximaCasu.Add(dataMSH.Max(msh => msh.DateTime_of_Message));
+            maximaCasu.Add(dataOBR.Max(obr => obr.Observation_DateTime));
+            vypisDat.Add("Celkova delka mereni je " + (maximaCasu.Max() - minimaCasu.Min()).ToString() + " (hh-mm-ss)");
+            #endregion
+            #region Delka mereni kazdeho z parametru
+		    foreach (var hItem in dataSlovos)
+	        {
+                vypisDat.Add("Delka mereni " 
+                                + hItem.key
+                                + " je " 
+                                + (
+                                    hItem.values.Max(val => val.Time) -
+                                    hItem.values.FindAll(val=>val.Time > new DateTime(1, 1, 1, 0, 0, 0)).Min(val=>val.Time)
+                                   ).ToString() 
+                                + " (hh-mm-ss)"
+                            );
+	        }
+	        #endregion
+            #region delka mereni maximalniho poctu parametru
+            List<DateTime> vsechnzCasy = new List<DateTime>();
+            foreach (var itemSlovos in dataSlovos)
+            {
+                foreach (var itemHodnosti in itemSlovos.values)
+                {
+                    vsechnzCasy.Add(itemHodnosti.Time);
+                }
+
+            }
+            vsechnzCasy.Sort();
+            List<int> positdlo = new List<int>();
+            positdlo.Add(0);
+            int cote = 0;
+            for (int i = 0; i < vsechnzCasy.Count-1; i++)
+            {
+                if (vsechnzCasy[i] == vsechnzCasy[i + 1])
+                {
+                    positdlo[cote]++;
+                }
+                else
+                {
+                    cote++;
+                    positdlo.Add(0);
+                    positdlo[cote]++;
+                }
+            }
+             vypisDat.Add("Delka vsech mereni maximalniho poctu parametru " + positdlo.Count(kol => kol == positdlo.Max()).ToString()+ "min");
+            #endregion
+
+             foreach (var pisInformaci in vypisDat)
+             {
+                 lblCasi.Text += (pisInformaci + "\n");
+             }
+            
+        }
+
         #endregion
 
         #region GetData
@@ -402,7 +509,7 @@ namespace HL7Message
         private void PrDelSerieChartu(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek)
         {
             while (nameChartek.Series.Count > 0)
-            { 
+            {
                 nameChartek.Series.RemoveAt(0);
             }
         }
@@ -428,6 +535,13 @@ namespace HL7Message
                 nameChartek.Series[nameLine].Points.AddXY(inputDataArrayXY[0, i], inputDataArrayXY[1, i]);
             }
         }
+        private void RdawLineDataToXY(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, List<int> indexers, double[] height, string nameLine)
+        {
+            foreach (var x in indexers)
+            {
+                nameChartek.Series[nameLine].Points.AddXY(x, height[x]);
+            }
+        }
 
         private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType)
         {
@@ -443,6 +557,11 @@ namespace HL7Message
 
         }
 
+        private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, List<int> indexers, double[] height, string nameLine, SeriesChartType seriesChartType)
+        {
+            PrepareSerie(nameChartek, nameLine, seriesChartType);
+            RdawLineDataToXY(nameChartek, indexers, height, nameLine);
+        }
         #endregion
 
         #endregion
