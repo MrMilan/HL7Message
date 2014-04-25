@@ -137,12 +137,16 @@ namespace HL7Message
             }
             #endregion
             #region Kresleni do grafu
+            grafikVseho.ChartAreas[0].AxisY.Title = null;
             foreach (var rada in keKresleni)
             {
-                RdawToGraphos(grafikVseho, rada.hodnotas, rada.nameOfSeries, SeriesChartType.FastLine);
+                RdawToGraphos(grafikVseho, rada.hodnotas, rada.nameOfSeries, minTime, SeriesChartType.FastLine);
                 var sega = segmenty.Find(sego => sego.nameOfSeries.Substring(13) == rada.nameOfSeries);
-                RdawToGraphos(grafikVseho, sega.indexSegmentPos, rada.hodnotas, sega.nameOfSeries, SeriesChartType.Point);
+                RdawToGraphos(grafikVseho, sega.indexSegmentPos, rada.hodnotas, sega.nameOfSeries, minTime, SeriesChartType.Point);
+                grafikVseho.ChartAreas[0].AxisY.Title += rada.nameOfSeries.Split('-')[1]+" ";
             }
+            
+            grafikVseho.ChartAreas[0].AxisX.Title = "time";
             #endregion
         }
 
@@ -263,19 +267,19 @@ namespace HL7Message
             vypisDat.Add("Celkova delka mereni je " + (maximaCasu.Max() - minimaCasu.Min()).ToString() + " (hh-mm-ss)");
             #endregion
             #region Delka mereni kazdeho z parametru
-		    foreach (var hItem in dataSlovos)
-	        {
-                vypisDat.Add("Delka mereni " 
+            foreach (var hItem in dataSlovos)
+            {
+                vypisDat.Add("Delka mereni "
                                 + hItem.key
-                                + " je " 
+                                + " je "
                                 + (
                                     hItem.values.Max(val => val.Time) -
-                                    hItem.values.FindAll(val=>val.Time > new DateTime(1, 1, 1, 0, 0, 0)).Min(val=>val.Time)
-                                   ).ToString() 
+                                    hItem.values.FindAll(val => val.Time > new DateTime(1, 1, 1, 0, 0, 0)).Min(val => val.Time)
+                                   ).ToString()
                                 + " (hh-mm-ss)"
                             );
-	        }
-	        #endregion
+            }
+            #endregion
             #region delka mereni maximalniho poctu parametru
             List<DateTime> vsechnzCasy = new List<DateTime>();
             foreach (var itemSlovos in dataSlovos)
@@ -290,7 +294,7 @@ namespace HL7Message
             List<int> positdlo = new List<int>();
             positdlo.Add(0);
             int cote = 0;
-            for (int i = 0; i < vsechnzCasy.Count-1; i++)
+            for (int i = 0; i < vsechnzCasy.Count - 1; i++)
             {
                 if (vsechnzCasy[i] == vsechnzCasy[i + 1])
                 {
@@ -303,14 +307,14 @@ namespace HL7Message
                     positdlo[cote]++;
                 }
             }
-             vypisDat.Add("Delka vsech mereni maximalniho poctu parametru " + positdlo.Count(kol => kol == positdlo.Max()).ToString()+ "min");
+            vypisDat.Add("Delka vsech mereni maximalniho poctu parametru " + positdlo.Count(kol => kol == positdlo.Max()).ToString() + "min");
             #endregion
 
-             foreach (var pisInformaci in vypisDat)
-             {
-                 lblCasi.Text += (pisInformaci + "\n");
-             }
-            
+            foreach (var pisInformaci in vypisDat)
+            {
+                lblCasi.Text += (pisInformaci + "\n");
+            }
+
         }
 
         #endregion
@@ -495,14 +499,14 @@ namespace HL7Message
 
         private void InitChartu(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek)
         {
-            nameChartek.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
-            nameChartek.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
+            //nameChartek.ChartAreas[0].AxisX.ScaleView.Zoomable = true;
+            //nameChartek.ChartAreas[0].AxisY.ScaleView.Zoomable = true;
 
-            nameChartek.ChartAreas[0].CursorX.AutoScroll = true;
-            nameChartek.ChartAreas[0].CursorY.AutoScroll = true;
+            //nameChartek.ChartAreas[0].CursorX.AutoScroll = true;
+            //nameChartek.ChartAreas[0].CursorY.AutoScroll = true;
 
-            nameChartek.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
-            nameChartek.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
+            //nameChartek.ChartAreas[0].CursorX.IsUserSelectionEnabled = true;
+            //nameChartek.ChartAreas[0].CursorY.IsUserSelectionEnabled = true;
 
         }
 
@@ -522,10 +526,22 @@ namespace HL7Message
 
         private void RdawLineDataToChart(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputDataArray, string nameLine)
         {
+            
             for (int i = 0; i < inputDataArray.Length; i++)
             {
                 nameChartek.Series[nameLine].Points.AddXY(i, inputDataArray[i]);
+                
             }
+        }
+
+        private void RdawLineDataToChart(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputDataArray, DateTime minTime, string nameLine)
+        {
+            nameChartek.Series[nameLine].XValueType = ChartValueType.Time;
+            for (int i = 0; i < inputDataArray.Length; i++)
+            {
+                nameChartek.Series[nameLine].Points.AddXY((minTime+TimeSpan.FromMinutes(i)), inputDataArray[i]);
+            }
+
         }
 
         private void RdawLineDataToXY(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[,] inputDataArrayXY, string nameLine)
@@ -543,10 +559,27 @@ namespace HL7Message
             }
         }
 
+        private void RdawLineDataToXY(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, List<int> indexers, double[] height, DateTime minTime, string nameLine)
+        {
+            nameChartek.Series[nameLine].XValueType = ChartValueType.Time;
+            foreach (var x in indexers)
+            {
+                nameChartek.Series[nameLine].Points.AddXY(minTime+TimeSpan.FromMinutes(x), height[x]);
+            }
+
+        }
+
         private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, SeriesChartType seriesChartType)
         {
             PrepareSerie(nameChartek, nameLine, seriesChartType);
             RdawLineDataToChart(nameChartek, inputArray, nameLine);
+
+        }
+
+        private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, double[] inputArray, string nameLine, DateTime minTime, SeriesChartType seriesChartType)
+        {
+            PrepareSerie(nameChartek, nameLine, seriesChartType);
+            RdawLineDataToChart(nameChartek, inputArray, minTime, nameLine);
 
         }
 
@@ -562,7 +595,17 @@ namespace HL7Message
             PrepareSerie(nameChartek, nameLine, seriesChartType);
             RdawLineDataToXY(nameChartek, indexers, height, nameLine);
         }
+        private void RdawToGraphos(System.Windows.Forms.DataVisualization.Charting.Chart nameChartek, List<int> indexers, double[] height, string nameLine, DateTime minTime, SeriesChartType seriesChartType)
+        {
+            PrepareSerie(nameChartek, nameLine, seriesChartType);
+            RdawLineDataToXY(nameChartek, indexers, height, minTime, nameLine);
+        }
         #endregion
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
 
         #endregion
     }
